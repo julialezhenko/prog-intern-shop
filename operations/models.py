@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.core.validators import MinValueValidator,MaxValueValidator
 
@@ -34,7 +36,7 @@ class InventorySnapshot(models.Model):
 
 
 class Supplier(models.Model):
-    name=models.CharField(max_length=160); country=models.CharField(max_length=80); email=models.EmailField(blank=True); default_lead_days=models.PositiveIntegerField(default=14); reliability_score=models.DecimalField(max_digits=5,decimal_places=2,validators=[MinValueValidator(0),MaxValueValidator(100)]); active=models.BooleanField(default=True)
+    name=models.CharField(max_length=160); country=models.CharField(max_length=80); email=models.EmailField(blank=True); default_lead_days=models.PositiveIntegerField(default=14); reliability_score=models.DecimalField(max_digits=5,decimal_places=2,validators=[MinValueValidator(Decimal("0")),MaxValueValidator(Decimal("100"))]); active=models.BooleanField(default=True)
     country_code=models.CharField(max_length=2,blank=True); region=models.CharField(max_length=80,blank=True)
     currency=models.CharField(max_length=3,default="EUR"); payment_terms_days=models.PositiveIntegerField(default=30)
     contract_started_on=models.DateField(null=True,blank=True); contact_name=models.CharField(max_length=120,blank=True)
