@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create account — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="auth-card card wide">
+  <p class="eyebrow">Join the roastery</p><h1>Create your account</h1>
+  <p class="muted">Track orders, save your address, manage subscriptions and leave reviews.</p>
+  <form method="post" novalidate>{% csrf_token %}
+    {% if form.non_field_errors %}<div class="message error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">
+      {% for field in form %}
+        <div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% for e in field.errors %}<small class="error-text">{{ e }}</small>{% endfor %}</div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="button block large">Create account</button>
+  </form>
+  <p class="muted small">Already registered? <a href="{% url 'login' %}">Log in</a>.</p>
+</div>
+{% endblock %}

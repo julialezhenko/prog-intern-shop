@@ -1,0 +1,101 @@
+{% load static storefront_extras %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ STORE_NAME }} — {{ STORE_TAGLINE }}{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}{{ meta_description|default:STORE_TAGLINE }}{% endblock %}">
+<link rel="canonical" href="{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endblock %}">
+<meta property="og:site_name" content="{{ STORE_NAME }}">
+<meta property="og:type" content="{% block og_type %}website{% endblock %}">
+<meta property="og:title" content="{% block og_title %}{{ STORE_NAME }}{% endblock %}">
+<meta property="og:description" content="{{ meta_description|default:STORE_TAGLINE }}">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+{% if og_image %}<meta property="og:image" content="{{ og_image|img:'w=1200&h=630' }}">{% endif %}
+<meta name="twitter:card" content="{% if og_image %}summary_large_image{% else %}summary{% endif %}">
+<meta name="theme-color" content="#F6F1E9">
+<link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/storefront.css' %}?v={{ ASSET_VERSION }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="announce"><div class="container">Free EU shipping on every order<span class="hide-m"> · Roasted Mon · Wed · Fri in Valencia</span> · <strong>WELCOME10</strong> for 10% off your first bag</div></div>
+<header class="site-header">
+  <div class="container header-row">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
+    <a class="brand" href="{% url 'storefront' %}" aria-label="{{ STORE_NAME }} home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="currentColor"/><path d="M16 7c-4 3-5.5 8-3.5 13 1.2 3 3 4.5 3.5 5 .5-.5 2.3-2 3.5-5 2-5 .5-10-3.5-13z" fill="#F6F1E9"/><path d="M16 8c-1 5-1 11 0 16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span class="brand-name">{{ STORE_SHORT_NAME }}</span><span class="brand-sub">Coffee Roasters</span>
+    </a>
+    <nav class="main-nav" id="site-nav" aria-label="Main">
+      <a href="{% url 'product_list' %}" {% if request.resolver_match.url_name == 'product_list' %}aria-current="page"{% endif %}>Shop all</a>
+      {% for c in nav_categories %}<a href="{{ c.get_absolute_url }}" {% if category and category.slug == c.slug %}aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}
+      <a href="{% url 'about' %}" class="nav-secondary" {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}>Our story</a>
+    </nav>
+    <form class="search" action="{% url 'product_list' %}" method="get" role="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" name="q" placeholder="Search coffee, gear…" value="{{ request.GET.q }}" aria-label="Search products">
+    </form>
+    <div class="header-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="icon-link" aria-label="Your account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>{{ user.first_name|default:user.username|truncatechars:12 }}</span></a>
+      {% else %}
+        <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="icon-link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Log in</span></a>
+      {% endif %}
+      <a href="{% url 'cart_detail' %}" class="cart-link" aria-label="Cart, {{ cart_count }} item{{ cart_count|pluralize }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h14l-1.5 9h-11L5 4H2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg><span>Cart</span>{% if cart_count %}<span class="badge">{{ cart_count }}</span>{% endif %}</a>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="{% block main_class %}container page{% endblock %}">
+  {% if messages %}
+    <ul class="messages container" role="status">
+      {% for m in messages %}<li class="message {{ m.tags }}">{{ m }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href="{% url 'storefront' %}"><span class="brand-name">{{ STORE_SHORT_NAME }}</span><span class="brand-sub">Coffee Roasters</span></a>
+      <p>{{ STORE_TAGLINE }}. Nine origins, three roast days a week, one small team that tastes everything before it ships.</p>
+      <form class="newsletter-inline" method="post" action="{% url 'newsletter_subscribe' %}">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="source" value="footer">
+        <label for="footer-email" class="sr-only">Email address</label>
+        <input id="footer-email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+        <button type="submit" class="button">Join</button>
+      </form>
+      <small class="muted">Fresh-crop news and brew tips, twice a month. No spam.</small>
+    </div>
+    <nav aria-label="Shop"><h3>Shop</h3>
+      <a href="{% url 'product_list' %}">All products</a>
+      {% for c in nav_categories %}<a href="{{ c.get_absolute_url }}">{{ c.name }}</a>{% endfor %}
+      <a href="{% url 'product_list' %}?on_sale=1">Offers</a>
+    </nav>
+    <nav aria-label="Help"><h3>Help</h3>
+      <a href="{% url 'shipping_returns' %}">Shipping &amp; returns</a>
+      <a href="{% url 'shipping_returns' %}#faq">FAQ</a>
+      {% if user.is_authenticated %}<a href="{% url 'order_list' %}">Your orders</a>{% else %}<a href="{% url 'login' %}">Track an order</a>{% endif %}
+      <a href="mailto:hello@sondermark.coffee">hello@sondermark.coffee</a>
+    </nav>
+    <nav aria-label="Company"><h3>Company</h3>
+      <a href="{% url 'about' %}">Our story</a>
+      <a href="{% url 'about' %}#sourcing">Sourcing</a>
+      <a href="{% url 'swagger' %}">API</a>
+      {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+    </nav>
+  </div>
+  <div class="container footer-bottom">
+    <span>© {% now "Y" %} {{ STORE_NAME }} · Carrer de la Reina 42, 46011 Valencia</span>
+    <span class="muted">Demo store — payments are simulated, no real charges are made.</span>
+  </div>
+</footer>
+<script src="{% static 'js/storefront.js' %}?v={{ ASSET_VERSION }}" defer></script>
+</body>
+</html>

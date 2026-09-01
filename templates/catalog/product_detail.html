@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}{{ product.name }}{% if product.is_coffee and product.tasting_notes %} — {{ product.tasting_notes }}{% endif %} | {{ STORE_NAME }}{% endblock %}
+{% block og_title %}{{ product.name }} — {{ STORE_NAME }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block head %}<script type="application/ld+json">{{ json_ld|safe }}</script>{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{% url 'storefront' %}">Home</a> › <a href="{% url 'product_list' %}">Shop</a> › <a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a> › <span aria-current="page">{{ product.name }}</span></nav>
+{% if preview_only %}<p class="message warning">Staff preview: this product is <strong>{{ product.status }}</strong>{% if not product.active %} and inactive{% endif %}, so customers cannot see it.</p>{% endif %}
+
+<article class="product-hero" data-product>
+  <div class="gallery">
+    {% if images %}
+      <figure class="main-image-wrap">
+        <img class="main-image" id="main-image" src="{{ images.0.src|img:'w=1100&h=1100' }}" alt="{{ images.0.alt_text|default:product.name }}" width="1100" height="1100" fetchpriority="high">
+        <span class="badges">{% if product.is_on_sale %}<span class="pill sale">−{{ product.discount_percent }}%</span>{% endif %}{% if product.featured %}<span class="pill">Best seller</span>{% endif %}</span>
+      </figure>
+      {% if images|length > 1 %}
+      <div class="thumbs" role="list">{% for image in images %}<button type="button" role="listitem" class="thumb {% if forloop.first %}active{% endif %}" data-full="{{ image.src|img:'w=1100&h=1100' }}" data-alt="{{ image.alt_text|default:product.name }}" aria-label="Show image {{ forloop.counter }}"><img src="{{ image.src|img:'w=200&h=200' }}" alt="" loading="lazy" width="200" height="200"></button>{% endfor %}</div>
+      {% endif %}
+    {% else %}
+      <div class="main-image placeholder-large" aria-hidden="true">{{ product.name|slice:":1" }}</div>
+    {% endif %}
+  </div>
+
+  <div class="product-info">
+    <p class="eyebrow">{% if product.is_coffee and product.origin %}{{ product.origin }}{% if product.region %} · {{ product.region }}{% endif %}{% else %}{{ product.category.name }} · {{ product.brand.name }}{% endif %}</p>
+    <h1>{{ product.name }}</h1>
+    {% if product.short_description %}<p class="lead">{{ product.short_description }}</p>{% endif %}
+    <a class="rating-line" href="#reviews">{% stars rating.avg %}<span>{% if rating.n %}{{ rating.avg|floatformat:1 }} · {{ rating.n }} review{{ rating.n|pluralize }}{% else %}No reviews yet — be the first{% endif %}</span></a>
+
+    {% if product.is_coffee and product.tasting_notes_list %}
+    <ul class="notes" aria-label="Tasting notes">{% for note in product.tasting_notes_list %}<li>{{ note }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <div class="price-row">
+      <span class="price big" data-price data-base="{{ product.sale_price }}">{{ CURRENCY }}{{ product.sale_price|money }}</span>
+      {% if product.is_on_sale %}<s class="old-price" data-old-price>{{ CURRENCY }}{{ product.compare_at_price|money }}</s><span class="pill sale">Save {{ product.discount_percent }}%</span>{% endif %}
+      <small class="muted">incl. VAT{% if product.kind == 'SUBSCRIPTION' %} · per delivery{% endif %}</small>
+    </div>
+
+    {% if variants %}
+      {% if product.available_quantity > 0 %}
+      <form method="post" action="{% url 'cart_add' %}" class="add-to-cart" data-add-to-cart>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% if variants|length == 1 %}<input type="hidden" name="variant" value="{{ variants.0.id }}" data-price="{{ variants.0.effective_price }}" data-stock="{{ variants.0.available_quantity }}" data-sku="{{ variants.0.sku }}" checked>{% else %}
+        <fieldset class="variant-picker">
+          <legend>{% if product.is_coffee %}Size &amp; grind{% elif product.kind == 'SUBSCRIPTION' %}Plan{% else %}Option{% endif %}</legend>
+          <div class="variant-options">
+            {% for v in variants %}
+              <label class="variant-option {% if v.available_quantity <= 0 %}disabled{% endif %}">
+                <input type="radio" name="variant" value="{{ v.id }}" data-price="{{ v.effective_price }}" data-stock="{{ v.available_quantity }}" data-sku="{{ v.sku }}" {% if v.available_quantity <= 0 %}disabled{% elif forloop.first %}checked{% endif %} required>
+                <span class="variant-name">{{ v.name }}</span>
+                <span class="variant-price">{% if v.available_quantity <= 0 %}Sold out{% elif v.effective_price != product.sale_price %}{{ CURRENCY }}{{ v.effective_price|money }}{% endif %}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+        <div class="buy-row">
+          <div class="qty" data-qty>
+            <button type="button" aria-label="Decrease quantity" data-qty-minus>−</button>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="99" required aria-label="Quantity">
+            <button type="button" aria-label="Increase quantity" data-qty-plus>+</button>
+          </div>
+          <button type="submit" class="button large buy-button">Add to cart — <span data-total>{{ CURRENCY }}{{ product.sale_price|money }}</span></button>
+        </div>
+        <p class="stock-line" data-stock-line><span class="dot in"></span>In stock · ships within 48 hours{% if product.available_quantity <= product.reorder_point %} · only {{ product.available_quantity }} left{% endif %}</p>
+      </form>
+      {% else %}
+        <div class="sold-out-box"><p><strong>Sold out.</strong> {% if product.kind == 'COFFEE' %}Seasonal lots come and go — join the newsletter and we will tell you when the next one lands.{% else %}More are on the way; check back soon.{% endif %}</p>
+        <form method="post" action="{% url 'newsletter_subscribe' %}" class="row">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="source" value="sold-out"><input type="email" name="email" placeholder="you@example.com" required aria-label="Email address"><button class="button" type="submit">Notify me</button></form></div>
+      {% endif %}
+    {% else %}
+      <p class="sold-out-box">This product has no purchasable options yet.</p>
+    {% endif %}
+
+    <ul class="trust-row">
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7" cy="18" r="1.6" fill="currentColor"/><circle cx="17" cy="18" r="1.6" fill="currentColor"/></svg>Free EU shipping, 1–6 days</li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Secure demo checkout</li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5M20 12a8 8 0 0 1-14 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>30-day happiness guarantee</li>
+    </ul>
+    {% if product.is_coffee and product.roast_level %}
+    <div class="roast-meter" aria-label="Roast level: {{ product.get_roast_level_display }}"><span>Light</span><span class="meter"><i style="--v:{{ product.roast_level|roast_index }}"></i></span><span>Dark</span><strong>{{ product.get_roast_level_display }}</strong></div>
+    {% endif %}
+  </div>
+</article>
+
+<div class="product-sections">
+  {% if product.highlights_list %}
+  <section class="pd-section" aria-labelledby="why-title">
+    <h2 id="why-title">Why you'll love {% if product.is_coffee %}this coffee{% else %}it{% endif %}</h2>
+    <div class="highlight-grid">{% for item in product.highlights_list %}<div class="highlight"><span class="check-icon" aria-hidden="true">✓</span><p>{{ item }}</p></div>{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  {% if product.is_coffee and product.profile_rows %}
+  <section class="pd-section" aria-labelledby="profile-title">
+    <h2 id="profile-title">Coffee profile</h2>
+    <dl class="profile-grid">
+      {% for label, value in product.profile_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+      {% if product.tasting_notes %}<div class="wide"><dt>Tasting notes</dt><dd>{{ product.tasting_notes }}</dd></div>{% endif %}
+    </dl>
+  </section>
+  {% endif %}
+
+  {% if product.specs %}
+  <section class="pd-section" aria-labelledby="specs-title">
+    <h2 id="specs-title">Specifications</h2>
+    <dl class="profile-grid">{% for label, value in product.specs.items %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+  </section>
+  {% endif %}
+
+  {% if product.description %}
+  <section class="pd-section prose" aria-labelledby="about-title">
+    <h2 id="about-title">About {% if product.is_coffee %}the coffee{% else %}this product{% endif %}</h2>
+    {{ product.description|linebreaks }}
+  </section>
+  {% endif %}
+
+  {% if brew_methods %}
+  <section class="pd-section" aria-labelledby="methods-title">
+    <h2 id="methods-title">Recommended brewing methods</h2>
+    <div class="method-grid compact">{% for code, label, blurb, icon in brew_methods %}<a class="method-card" href="{% url 'product_list' %}?brew={{ code }}"><span class="method-icon">{{ icon|safe }}</span><strong>{{ label }}</strong><span>{{ blurb }}</span></a>{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  {% if product.brew_steps %}
+  <section class="pd-section" aria-labelledby="brew-title">
+    <h2 id="brew-title">How to brew</h2>
+    <ol class="steps">{% for step in product.brew_steps %}<li><span class="step-no">{{ forloop.counter }}</span><p>{{ step }}</p></li>{% endfor %}</ol>
+  </section>
+  {% endif %}
+
+  {% if product.origin_story %}
+  <section class="pd-section story" aria-labelledby="story-title">
+    {% if product.story_image_url %}<img src="{{ product.story_image_url|img:'w=1200&h=900' }}" alt="{% if product.origin %}{{ product.region|default:product.origin }}{% else %}{{ product.name }}{% endif %}" loading="lazy" width="1200" height="900">{% endif %}
+    <div class="story-copy prose"><p class="eyebrow">About the origin</p><h2 id="story-title">{% if product.region %}{{ product.region }}, {{ product.origin }}{% elif product.origin %}{{ product.origin }}{% else %}Behind the product{% endif %}</h2>{{ product.origin_story|linebreaks }}</div>
+  </section>
+  {% endif %}
+
+  <section class="pd-section" id="reviews" aria-labelledby="reviews-title">
+    <div class="reviews-head">
+      <div><h2 id="reviews-title">Reviews</h2>{% if rating.n %}<p class="rating-summary">{% stars rating.avg "lg" %}<strong>{{ rating.avg|floatformat:1 }}</strong> out of 5 · {{ rating.n }} review{{ rating.n|pluralize }}</p>{% endif %}</div>
+      {% if user.is_authenticated %}{% if not own_review and product.is_visible %}<a class="button ghost small" href="#write-review">Write a review</a>{% endif %}{% else %}<a class="button ghost small" href="{% url 'login' %}?next={{ request.path|urlencode }}%23write-review">Log in to review</a>{% endif %}
+    </div>
+    {% if reviews %}
+      <div class="review-list">
+        {% for r in reviews %}
+          <article class="review-card">
+            {% stars r.rating %}
+            <p>{{ r.comment|default:"(no comment)" }}</p>
+            <footer><span class="avatar">{{ r.customer|initials }}</span><span><strong>{{ r.customer|display_name }}</strong>{% if r.verified_purchase %} <span class="verified">Verified purchase</span>{% endif %}<small>{{ r.created_at|date:"j M Y" }}</small></span></footer>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}<p class="muted">No reviews yet{% if product.is_coffee %} — brew a cup and tell us what you taste{% endif %}.</p>{% endif %}
+    {% if user.is_authenticated and product.is_visible %}
+      {% if own_review %}
+        <p class="message">You reviewed this product on {{ own_review.created_at|date:"j M Y" }}{% if own_review.status != "APPROVED" %} — it is awaiting moderation{% endif %}. Thank you!</p>
+      {% else %}
+      <form method="post" action="{% url 'review_create' product.slug %}" class="review-form" id="write-review">{% csrf_token %}
+        <h3>Write a review</h3>
+        <fieldset class="rating-picker"><legend>Your rating</legend>{% for radio in review_form.rating %}<label>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}</fieldset>
+        <div class="field"><label for="{{ review_form.comment.id_for_label }}">Your review</label>{{ review_form.comment }}</div>
+        <button type="submit" class="button">Submit review</button>
+        <small class="muted">Reviews are moderated before they appear{% if verified_purchase %}; yours will be marked as a verified purchase{% endif %}.</small>
+      </form>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="pd-section" aria-labelledby="pfaq-title">
+    <h2 id="pfaq-title">Frequently asked questions</h2>
+    {% include "catalog/includes/_faq.html" with faq=faq %}
+  </section>
+</div>
+
+{% if related %}
+<section class="section" aria-labelledby="related-title">
+  <div class="section-head"><h2 id="related-title">You might also like</h2><a href="{{ product.category.get_absolute_url }}">More {{ product.category.name|lower }} →</a></div>
+  <div class="product-grid">{% for p in related %}{% include "catalog/includes/_product_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

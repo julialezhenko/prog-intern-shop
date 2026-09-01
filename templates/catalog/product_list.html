@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}{{ title }} — {{ STORE_NAME }}{% endblock %}
+{% block og_title %}{{ title }} — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{% url 'storefront' %}">Home</a> › <a href="{% url 'product_list' %}">Shop</a>{% if category %} › <span aria-current="page">{{ category.name }}</span>{% endif %}</nav>
+    <h1>{{ title }}</h1>
+    {% if description %}<p class="lead">{{ description }}</p>{% endif %}
+  </div>
+  <span class="muted count">{{ total }} product{{ total|pluralize }}</span>
+</div>
+
+{% if not category and not query %}
+<div class="category-strip" aria-label="Categories">
+  {% for c in categories %}<a class="chip" href="{{ c.get_absolute_url }}">{{ c.name }}</a>{% endfor %}
+</div>
+{% endif %}
+
+<div class="catalog-layout">
+  <aside class="filters" id="filters">
+    <div class="filters-head"><h2>Filter</h2><button type="button" class="link-button" data-filters-close>Close</button></div>
+    <form method="get" action="" data-filter-form>
+      {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+      {% if roasts %}<fieldset><legend>Roast level</legend>
+        {% for code, label in roasts %}<label class="check"><input type="checkbox" name="roast" value="{{ code }}" {% if code in selected.roast %}checked{% endif %}><span class="roast-dot r{{ code|roast_index }}"></span>{{ label }}</label>{% endfor %}
+      </fieldset>{% endif %}
+      {% if origins %}<fieldset><legend>Origin</legend>
+        {% for o in origins %}<label class="check"><input type="checkbox" name="origin" value="{{ o }}" {% if o in selected.origin %}checked{% endif %}>{{ o }}</label>{% endfor %}
+      </fieldset>{% endif %}
+      {% if brews %}<fieldset><legend>Brewing method</legend>
+        {% for code, label in brews %}<label class="check"><input type="checkbox" name="brew" value="{{ code }}" {% if code in selected.brew %}checked{% endif %}>{{ label }}</label>{% endfor %}
+      </fieldset>{% endif %}
+      <fieldset><legend>Price ({{ CURRENCY }})</legend>
+        <div class="row"><input type="number" name="min_price" min="0" step="1" placeholder="Min" value="{{ filters.min_price }}" aria-label="Minimum price"><span aria-hidden="true">–</span><input type="number" name="max_price" min="0" step="1" placeholder="Max" value="{{ filters.max_price }}" aria-label="Maximum price"></div>
+      </fieldset>
+      <fieldset>
+        <label class="check"><input type="checkbox" name="in_stock" value="1" {% if filters.in_stock %}checked{% endif %}>In stock only</label>
+        <label class="check"><input type="checkbox" name="on_sale" value="1" {% if filters.on_sale %}checked{% endif %}>On offer</label>
+      </fieldset>
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <div class="row"><button type="submit" class="button">Apply filters</button>{% if active_filters %}<a class="button ghost" href="{% if category %}{{ category.get_absolute_url }}{% else %}{% url 'product_list' %}{% endif %}">Reset</a>{% endif %}</div>
+    </form>
+  </aside>
+
+  <section aria-live="polite">
+    <div class="toolbar">
+      <button type="button" class="button ghost small filters-open" data-filters-open aria-controls="filters">Filters{% if active_filters %} •{% endif %}</button>
+      {% if active_filters %}<div class="active-chips">
+        {% if query %}<a class="chip removable" href="?{% query_replace q=None %}">“{{ query }}” ✕</a>{% endif %}
+        {% for r in selected.roast %}<a class="chip removable" href="?{% query_replace roast=None %}">{{ r|lower|capfirst }} roast ✕</a>{% endfor %}
+        {% for o in selected.origin %}<a class="chip removable" href="?{% query_replace origin=None %}">{{ o }} ✕</a>{% endfor %}
+        {% for b in selected.brew %}{% with m=b|brew_method %}<a class="chip removable" href="?{% query_replace brew=None %}">{{ m.0 }} ✕</a>{% endwith %}{% endfor %}
+        {% if filters.in_stock %}<a class="chip removable" href="?{% query_replace in_stock=None %}">In stock ✕</a>{% endif %}
+        {% if filters.on_sale %}<a class="chip removable" href="?{% query_replace on_sale=None %}">On offer ✕</a>{% endif %}
+      </div>{% endif %}
+      <form method="get" class="sort-form">
+        {% for key, values in filters.lists %}{% if key != 'sort' and key != 'page' %}{% for v in values %}<input type="hidden" name="{{ key }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+        <label for="sort">Sort</label>
+        <select name="sort" id="sort" data-autosubmit>{% for key, opt in sort_options.items %}<option value="{{ key }}" {% if key == sort %}selected{% endif %}>{{ opt.0 }}</option>{% endfor %}</select>
+      </form>
+    </div>
+    {% for e in errors %}<p class="message error">{{ e }}</p>{% endfor %}
+    {% if page.object_list %}
+      <div class="product-grid">{% for p in page.object_list %}{% include "catalog/includes/_product_card.html" %}{% endfor %}</div>
+      {% include "catalog/includes/_pagination.html" %}
+    {% else %}
+      <div class="empty-state">
+        <h3>No coffee matches that</h3>
+        <p>{% if query %}Nothing matched “{{ query }}”. {% endif %}Try fewer filters, another search term, or browse a different category.</p>
+        <a class="button ghost" href="{% url 'product_list' %}">Clear filters</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

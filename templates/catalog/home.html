@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}{{ STORE_NAME }} — Specialty coffee roasted to order in Valencia{% endblock %}
+{% block og_title %}{{ STORE_NAME }} — Specialty coffee roasted to order{% endblock %}
+{% block main_class %}home{% endblock %}
+{% block content %}
+<section class="hero container">
+  <div class="hero-copy">
+    <p class="eyebrow">Roasted {{ facts.roast_days }} · Shipped within 48 h</p>
+    <h1>Coffee worth slowing down for.</h1>
+    <p class="lead">Small-batch single origins, espresso blends and honest decaf from farms we know by name — roasted in Valencia the week they reach your door.</p>
+    <div class="hero-actions">
+      <a class="button large" href="{% url 'product_list' %}">Shop the coffee</a>
+      <a class="button large ghost" href="{% url 'category_detail' 'subscriptions' %}">Start a subscription</a>
+    </div>
+    <ul class="hero-trust">
+      <li>Free EU shipping</li><li>Roast date on every bag</li><li>{% if rating.n %}{{ rating.avg|floatformat:1 }}★ from {{ rating.n }} reviews{% else %}Traceable sourcing{% endif %}</li>
+    </ul>
+  </div>
+  <figure class="hero-media">
+    <img src="{{ 'https://images.unsplash.com/photo-1500557515707-69f05f65df7d'|img:'w=1100&h=1000' }}" alt="Pouring hot water over fresh coffee grounds in a ceramic dripper" width="1100" height="1000" fetchpriority="high">
+    <figcaption class="hero-card">
+      <span class="eyebrow">This week's roast</span>
+      {% if hero_product %}<a href="{{ hero_product.get_absolute_url }}">{{ hero_product.name }}</a><small>{{ hero_product.tasting_notes|default:hero_product.short_description|truncatechars:48 }}</small>{% else %}<a href="{% url 'product_list' %}">See what's fresh</a>{% endif %}
+    </figcaption>
+  </figure>
+</section>
+
+<section class="container section" aria-labelledby="categories-title">
+  <div class="section-head"><h2 id="categories-title">Shop by category</h2><a href="{% url 'product_list' %}">All products →</a></div>
+  {% if categories %}
+  <div class="category-grid">
+    {% for c in categories %}
+      <a class="category-tile" href="{{ c.get_absolute_url }}">
+        {% if c.image_src %}<img src="{{ c.image_src|img:'w=600&h=700' }}" alt="" loading="lazy" width="600" height="700">{% endif %}
+        <span class="tile-copy"><strong>{{ c.name }}</strong><span>{{ c.product_count }} product{{ c.product_count|pluralize }}</span></span>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="empty-state"><h3>The shelves are empty</h3><p>Create categories and products in the <a href="{% url 'admin:index' %}">admin</a>, or run <code>python manage.py seed_demo</code>.</p></div>
+  {% endif %}
+</section>
+
+{% if featured %}
+<section class="container section" aria-labelledby="featured-title">
+  <div class="section-head"><div><p class="eyebrow">Best sellers</p><h2 id="featured-title">What everyone is brewing</h2></div><a href="{% url 'product_list' %}?sort=featured">See all →</a></div>
+  <div class="product-grid">{% for p in featured %}{% include "catalog/includes/_product_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+<section class="container">
+  <div class="promo-band">
+    <div class="promo-copy">
+      <p class="eyebrow light">Welcome offer</p>
+      <h2>10% off your first bag with <code>WELCOME10</code></h2>
+      <p>{% if on_sale %}Plus current offers on {% for p in on_sale %}<a href="{{ p.get_absolute_url }}">{{ p.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}Enter the code at the cart — valid on any order over {{ CURRENCY }}20.{% endif %}</p>
+      <a class="button light" href="{% url 'product_list' %}?on_sale=1">Browse offers</a>
+    </div>
+    <img src="{{ 'https://images.unsplash.com/photo-1690983326555-8b8e27843a32'|img:'w=900&h=700' }}" alt="A scoop of freshly roasted coffee beans" loading="lazy" width="900" height="700">
+  </div>
+</section>
+
+<section class="container section" aria-labelledby="find-title">
+  <div class="section-head"><div><p class="eyebrow">Find your coffee</p><h2 id="find-title">Start with how you brew</h2></div></div>
+  <div class="method-grid">
+    {% for code, label, blurb, icon in brew_methods %}
+      <a class="method-card" href="{% url 'product_list' %}?brew={{ code }}"><span class="method-icon">{{ icon|safe }}</span><strong>{{ label }}</strong><span>{{ blurb }}</span></a>
+    {% endfor %}
+  </div>
+  <div class="roast-row">
+    <span class="muted">Or by roast:</span>
+    {% for code, label in roasts %}<a class="chip" href="{% url 'product_list' %}?roast={{ code }}"><span class="roast-dot r{{ code|roast_index }}"></span>{{ label }}</a>{% endfor %}
+    <a class="chip" href="{% url 'category_detail' 'decaf' %}">Decaf</a>
+  </div>
+</section>
+
+<section class="container section why" aria-labelledby="why-title">
+  <div class="section-head"><div><p class="eyebrow">Why {{ STORE_SHORT_NAME }}</p><h2 id="why-title">Small roastery, serious standards</h2></div></div>
+  <div class="why-grid">
+    {% for title, text in trust %}<div class="why-card"><span class="why-index">0{{ forloop.counter }}</span><h3>{{ title }}</h3><p>{{ text }}</p></div>{% endfor %}
+  </div>
+</section>
+
+{% if newest %}
+<section class="container section" aria-labelledby="new-title">
+  <div class="section-head"><div><p class="eyebrow">Just landed</p><h2 id="new-title">New arrivals</h2></div><a href="{% url 'product_list' %}?sort=newest">See all →</a></div>
+  <div class="product-grid">{% for p in newest %}{% include "catalog/includes/_product_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if subscription %}
+<section class="container">
+  <div class="split-band">
+    <img src="{{ 'https://images.unsplash.com/photo-1748895177768-b4a54b9c2954'|img:'w=1000&h=800' }}" alt="Pour-over kettle, dripper and cups on a wooden table" loading="lazy" width="1000" height="800">
+    <div class="split-copy">
+      <p class="eyebrow">Subscriptions</p>
+      <h2>Never run out. Never drink stale coffee again.</h2>
+      <p>A rotating single origin or our house espresso, roasted within 48 hours of dispatch and delivered every two or four weeks. Free shipping, pause or skip from your account.</p>
+      <p class="price-line">From <strong>{{ CURRENCY }}{{ subscription.sale_price|money }}</strong> per delivery</p>
+      <a class="button" href="{{ subscription.get_absolute_url }}">Build your subscription</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="container section editorial" aria-labelledby="editorial-title">
+  <div class="editorial-media"><img src="{{ 'https://images.unsplash.com/photo-1511537190424-bbbab87ac5eb'|img:'w=1200&h=900' }}" alt="Roasted beans cooling in the drum roaster at the roastery" loading="lazy" width="1200" height="900"></div>
+  <div class="editorial-copy">
+    <p class="eyebrow">From the roastery</p>
+    <h2 id="editorial-title">Why specialty coffee tastes like fruit, flowers and chocolate</h2>
+    <p>Coffee is a fruit seed. Grown high and picked ripe, processed with care and roasted lightly enough to keep its character, it tastes of the place it came from: jasmine and peach from Sidamo, blackcurrant from Nyeri, hazelnut and fig from the Cerrado. Nothing is added — we just stop before the roast burns it away.</p>
+    <p>Since {{ facts.founded }} we have worked with the same {{ facts.origins }} origins, visiting when we can and cupping every lot blind before we buy. It is slower. It is also the only way we know to be sure.</p>
+    <a class="button ghost" href="{% url 'about' %}">Read our story</a>
+  </div>
+</section>
+
+{% if reviews %}
+<section class="container section" aria-labelledby="reviews-title">
+  <div class="section-head"><div><p class="eyebrow">Reviews</p><h2 id="reviews-title">{% if rating.n %}{{ rating.avg|floatformat:1 }} out of 5 across {{ rating.n }} reviews{% else %}What customers say{% endif %}</h2></div></div>
+  <div class="review-grid">
+    {% for r in reviews %}
+      <blockquote class="review-card">
+        {% stars r.rating %}
+        <p>“{{ r.comment }}”</p>
+        <footer><span class="avatar">{{ r.customer|initials }}</span><span><strong>{{ r.customer|display_name }}</strong><small>on <a href="{{ r.product.get_absolute_url }}">{{ r.product.name }}</a></small></span></footer>
+      </blockquote>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="container section faq-section" aria-labelledby="faq-title">
+  <div><p class="eyebrow">Good to know</p><h2 id="faq-title">Questions we get asked most</h2><p class="muted">Still curious? <a href="{% url 'shipping_returns' %}">Shipping &amp; returns</a> or e-mail <a href="mailto:hello@sondermark.coffee">hello@sondermark.coffee</a>.</p></div>
+  {% include "catalog/includes/_faq.html" with faq=faq open_first=True %}
+</section>
+
+<div class="container">{% include "catalog/includes/_newsletter.html" with source="home" %}</div>
+{% endblock %}

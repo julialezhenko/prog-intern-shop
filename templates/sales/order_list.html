@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}Your orders — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Your orders</h1></div><a class="button ghost small" href="{% url 'profile' %}">Account settings</a></div>
+{% if orders %}
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Order</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td><strong>#{{ o.id }}</strong></td><td>{{ o.created_at|date:"j M Y H:i" }}</td><td>{{ o.items.count }}</td><td>{{ CURRENCY }}{{ o.total|money }}</td>
+      <td><span class="status status-{{ o.status|lower }}">{{ o.get_status_display }}</span></td>
+      <td><a href="{% url 'order_detail' o.id %}">{% if o.can_pay %}Pay now{% else %}Details{% endif %} →</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<div class="empty-state"><h3>No orders yet</h3><p>Your order history will appear here after your first checkout.</p><a class="button" href="{% url 'product_list' %}">Start shopping</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:analytics_testdatabatch_changelist' %}">Test data batches</a> &rsaquo; Delete
+  </div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Delete generated test data</h1>
+  {% if batch %}
+    <p>This removes everything created by batch <strong>{{ batch }}</strong>.</p>
+  {% else %}
+    <p>This removes <strong>every</strong> record created by the test-data generator, across all batches.</p>
+  {% endif %}
+
+  {% if counts %}
+    <table class="module" style="margin:1em 0">
+      <tbody>
+      {% for label, value in counts %}
+        <tr><th style="text-align:left;padding:4px 20px 4px 0">{{ label }}</th><td>{{ value }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="help">
+      Only rows flagged as generated test data are deleted. Real customers, real orders, the product catalogue,
+      warehouses and suppliers are never touched.
+    </p>
+    <form method="post">{% csrf_token %}
+      <div class="submit-row">
+        <input type="submit" value="Yes, delete this test data" class="default" style="background:#ba2121">
+        <a href="{% url 'admin:analytics_testdatabatch_changelist' %}" class="button cancel-link">Cancel</a>
+      </div>
+    </form>
+  {% else %}
+    <p>There is no generated test data to delete.</p>
+    <div class="submit-row">
+      <a href="{% url 'admin:analytics_testdatabatch_changelist' %}" class="button">Back</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

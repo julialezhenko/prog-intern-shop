@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}Order #{{ order.id }} — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">{% if is_guest_view %}<a href="{% url 'storefront' %}">Home</a>{% else %}<a href="{% url 'order_list' %}">Your orders</a>{% endif %} › <span aria-current="page">Order #{{ order.id }}</span></nav>
+{% if is_guest_view %}<p class="message">You checked out as a guest. Bookmark this page or use the link in your confirmation e-mail to come back to it. <a href="{% url 'register' %}">Create an account</a> to see all your orders in one place.</p>{% endif %}
+
+{% if order.can_pay %}
+<div class="page-head"><div><p class="eyebrow">Almost there</p><h1>Order #{{ order.id }} — complete your payment</h1><p class="lead">Stock is reserved for you until the order is paid or cancelled.</p></div><ol class="stepper" aria-label="Checkout progress"><li class="done">Cart</li><li class="done">Details</li><li class="current" aria-current="step">Payment</li></ol></div>
+<section class="card pay-box">
+  <div class="pay-grid">
+    <form method="post" action="{% url 'order_pay' order.id %}" class="card-form" novalidate>
+      {% csrf_token %}
+      {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+      <h2>Card payment <span class="pill">Demo</span></h2>
+      <div class="form-grid">
+        {% for field in payment_form %}
+          <div class="field {% if field.name == 'holder' or field.name == 'number' %}span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for e in field.errors %}<small class="error-text">{{ e }}</small>{% endfor %}</div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="button large block">Pay {{ CURRENCY }}{{ order.total|money }}</button>
+      <p class="muted small">Card details go straight to the (simulated) gateway and are never stored. No real charge is made.</p>
+    </form>
+    {% if gateway == "simulated" %}
+    <aside class="test-cards">
+      <h3>Test cards</h3>
+      <ul class="plain small">{% for number, outcome in test_cards.items %}<li><code>{{ number }}</code><span>{{ outcome.1 }}</span></li>{% endfor %}</ul>
+      <p class="muted small">Any other Luhn-valid number is approved. Use any future expiry (e.g. 12/30) and a 3-digit CVC.</p>
+    </aside>
+    {% endif %}
+  </div>
+</section>
+{% elif order.is_paid %}
+<section class="confirmation">
+  <div><p class="eyebrow">Thank you</p><h1>Order #{{ order.id }} is confirmed</h1><p class="lead">{% if order.status == 'PAID' %}We will roast your coffee on the next roast day and send a tracking link when it ships.{% elif order.status == 'SHIPPED' %}Your order is on its way.{% elif order.status == 'DELIVERED' %}Delivered — enjoy, and let us know what you think.{% else %}Your order is being prepared.{% endif %}{% if order.contact_email %} A confirmation has been sent to <strong>{{ order.contact_email }}</strong>.{% endif %}</p></div>
+  <span class="status status-{{ order.status|lower }}">{{ order.get_status_display }}</span>
+</section>
+{% else %}
+<div class="page-head"><h1>Order #{{ order.id }}</h1><span class="status status-{{ order.status|lower }}">{{ order.get_status_display }}</span></div>
+{% endif %}
+
+<div class="cart-layout">
+  <section>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th><th>Ships from</th></tr></thead>
+      <tbody>{% for i in order.items.all %}<tr><td><strong>{{ i.product_name }}</strong><br><small class="muted">{{ i.variant.name }} · {{ i.sku }}</small></td><td>{{ i.quantity }}</td><td>{{ CURRENCY }}{{ i.unit_price|money }}</td><td>{{ CURRENCY }}{{ i.line_total|money }}</td><td>{{ i.warehouse.code|default:"—" }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+
+    <h2>Timeline</h2>
+    <ol class="timeline">
+      {% for h in order.history.all %}<li><span class="muted">{{ h.created_at|date:"j M Y H:i" }}</span> {{ h.from_status|default:"—" }} → <strong>{{ h.to_status }}</strong>{% if h.note %} <em class="muted">{{ h.note }}</em>{% endif %}</li>{% endfor %}
+    </ol>
+    {% with payments=order.payments.all %}{% if payments %}
+    <h2>Payments</h2>
+    <ul class="plain">{% for p in payments %}<li>{{ p.created_at|date:"j M Y H:i" }} — {{ CURRENCY }}{{ p.amount|money }} — <span class="status status-{{ p.status|lower }}">{{ p.status }}</span>{% if p.card_last4 %} card ····{{ p.card_last4 }}{% endif %} <small class="muted">{{ p.message }} · ref {{ p.reference|slice:":12" }}</small></li>{% endfor %}</ul>
+    {% endif %}{% endwith %}
+  </section>
+
+  <aside class="summary card">
+    <h2>Summary</h2>
+    <dl class="totals">
+      <dt>Subtotal</dt><dd>{{ CURRENCY }}{{ order.subtotal|money }}</dd>
+      {% if order.discount_amount %}<dt>Discount</dt><dd class="ok">− {{ CURRENCY }}{{ order.discount_amount|money }}</dd>{% endif %}
+      <dt>Shipping</dt><dd>Free</dd>
+      <dt class="muted small">Includes VAT</dt><dd class="muted small">{{ CURRENCY }}{{ order.tax_amount|money }}</dd>
+      <dt class="grand">Total</dt><dd class="grand">{{ CURRENCY }}{{ order.total|money }}</dd>
+    </dl>
+    {% if order.shipping_address %}
+    <h3>Ships to</h3>
+    <address>{{ order.shipping_name }}<br>{{ order.shipping_address }}<br>{{ order.shipping_postal_code }} {{ order.shipping_city }}<br>{{ order.shipping_country }}{% if order.contact_phone %}<br>{{ order.contact_phone }}{% endif %}</address>
+    {% endif %}
+    {% if order.customer_note %}<p class="muted small">Note: {{ order.customer_note }}</p>{% endif %}
+    {% with codes=order.warehouses %}{% if codes %}<p class="muted small">Fulfilled from {{ codes|join:", " }}{% if codes|length > 1 %} (split shipment){% endif %}</p>{% endif %}{% endwith %}
+    {% if order.status == "NEW" or order.status == "PENDING_PAYMENT" or order.status == "PAID" %}
+      <form method="post" action="{% url 'order_cancel' order.id %}" onsubmit="return confirm('Cancel order #{{ order.id }}? Reserved stock will be released.');">{% csrf_token %}{% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}<button type="submit" class="button ghost block danger-outline">Cancel order</button></form>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

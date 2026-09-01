@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Shipping & returns — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Help</p><h1>Shipping &amp; returns</h1><p class="lead">Free tracked shipping across the EU, dispatched within 48 hours of roasting.</p></div></div>
+<div class="info-grid">
+  <div class="info-card"><h2>Shipping</h2><table class="simple-table"><tbody><tr><td>Spain &amp; Portugal</td><td>1–3 working days</td><td>Free</td></tr><tr><td>France, Germany, Italy, Netherlands</td><td>3–5 working days</td><td>Free</td></tr><tr><td>Rest of the EU</td><td>4–6 working days</td><td>Free</td></tr></tbody></table><p class="muted small">Orders placed before 12:00 on a roast day (Mon, Wed, Fri) ship the same day.</p></div>
+  <div class="info-card"><h2>Returns</h2><p>Unused brewing equipment can be returned within 30 days in its original packaging for a full refund. Coffee is perishable and cannot be returned — but if a coffee is not to your taste, tell us within 30 days and we will replace it or refund you. That is the happiness guarantee.</p><p>To start a return, reply to your order confirmation e-mail or write to <a href="mailto:hello@sondermark.coffee">hello@sondermark.coffee</a>.</p></div>
+</div>
+<section class="faq-section" id="faq"><div><h2>Questions</h2></div>{% include "catalog/includes/_faq.html" with faq=faq open_first=True %}</section>
+{% endblock %}

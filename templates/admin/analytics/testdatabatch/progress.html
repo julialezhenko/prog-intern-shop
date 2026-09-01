@@ -1,0 +1,62 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:analytics_testdatabatch_changelist' %}">Test data batches</a> &rsaquo; {{ batch }}
+  </div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1 id="headline">Generating test dataset…</h1>
+  <p class="help">Period {{ batch.date_from }} – {{ batch.date_to }}{% if batch.seed %}, seed {{ batch.seed }}{% endif %}.
+     You can leave this page; generation continues in the background.</p>
+
+  <div style="max-width:44em;margin:1em 0">
+    <div style="background:#e6e6e6;border-radius:6px;height:22px;overflow:hidden">
+      <div id="bar" style="background:#417690;height:100%;width:0%;transition:width .4s"></div>
+    </div>
+    <p id="counters" style="margin-top:.6em">Users: 0 / {{ batch.target_users }} &nbsp;·&nbsp; Orders: 0</p>
+    <p id="stage" class="help"></p>
+  </div>
+
+  <div id="summary" style="display:none">
+    <h2>Generated</h2>
+    <table id="summary-table" class="module"><tbody></tbody></table>
+    <div class="submit-row" style="margin-top:1em">
+      <a class="button default" href="{% url 'admin:analytics_testdatabatch_changelist' %}">Back to batches</a>
+      <a class="button" href="{% url 'admin:sales_order_changelist' %}">Browse orders</a>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var url = "{{ status_url }}";
+  var bar = document.getElementById("bar"), counters = document.getElementById("counters");
+  var stage = document.getElementById("stage"), summary = document.getElementById("summary");
+  var table = document.querySelector("#summary-table tbody"), headline = document.getElementById("headline");
+
+  function tick() {
+    fetch(url, {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (data) {
+      bar.style.width = data.percent + "%";
+      counters.textContent = "Users: " + data.users.toLocaleString() + " / " + data.target_users.toLocaleString() +
+                             "  ·  Orders: " + data.orders.toLocaleString();
+      stage.textContent = data.stage ? "Stage: " + data.stage : "";
+      if (!data.finished) { setTimeout(tick, 1000); return; }
+      bar.style.width = "100%";
+      if (data.status === "FAILED") {
+        headline.textContent = "Generation failed";
+        stage.textContent = data.message;
+        return;
+      }
+      headline.textContent = "Test dataset ready";
+      table.innerHTML = data.counts.map(function (row) {
+        return "<tr><th style='text-align:left;padding:4px 18px 4px 0'>" + row.label +
+               "</th><td>" + row.value.toLocaleString() + "</td></tr>";
+      }).join("");
+      summary.style.display = "block";
+    }).catch(function () { setTimeout(tick, 2500); });
+  }
+  tick();
+})();
+</script>
+{% endblock %}

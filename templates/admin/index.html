@@ -1,0 +1,37 @@
+{% extends "admin/index.html" %}
+{% load humanize %}
+{% block content %}
+{% if dashboard %}
+<style>
+  .cl-dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 20px}
+  .cl-dash .kpi{background:var(--darkened-bg,#f8f8f8);border:1px solid var(--hairline-color,#e8e8e8);border-radius:8px;padding:12px 14px}
+  .cl-dash .kpi b{display:block;font-size:1.6rem;line-height:1.2;color:var(--link-fg)}
+  .cl-dash .kpi span{color:var(--body-quiet-color);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+  .cl-dash .kpi.warn b{color:#b45309}
+  .cl-recent{margin-bottom:24px}
+  .cl-recent table{width:100%}
+</style>
+<div class="cl-dash">
+  <a class="kpi" href="{% url 'admin:catalog_product_changelist' %}"><b>{{ dashboard.products_live }}</b><span>Live products / {{ dashboard.products_total }}</span></a>
+  <a class="kpi {% if dashboard.low_stock_products %}warn{% endif %}" href="{% url 'admin:operations_inventory_changelist' %}"><b>{{ dashboard.low_stock_products }}</b><span>Products at reorder point</span></a>
+  <a class="kpi" href="{% url 'admin:catalog_product_changelist' %}?status__exact=DRAFT"><b>{{ dashboard.products_draft }}</b><span>Draft products</span></a>
+  <a class="kpi" href="{% url 'admin:sales_order_changelist' %}"><b>{{ dashboard.orders_today }}</b><span>Orders today</span></a>
+  <a class="kpi {% if dashboard.orders_awaiting_payment %}warn{% endif %}" href="{% url 'admin:sales_order_changelist' %}?status__exact=PENDING_PAYMENT"><b>{{ dashboard.orders_awaiting_payment }}</b><span>Awaiting payment</span></a>
+  <a class="kpi" href="{% url 'admin:sales_order_changelist' %}?status__exact=PAID"><b>{{ dashboard.orders_pending }}</b><span>Open orders</span></a>
+  <div class="kpi"><b>€{{ dashboard.revenue_week|floatformat:0|intcomma }}</b><span>Revenue, last 7 days</span></div>
+  <div class="kpi"><b>€{{ dashboard.revenue_month|floatformat:0|intcomma }}</b><span>Revenue, this month</span></div>
+  <a class="kpi {% if dashboard.pending_reviews %}warn{% endif %}" href="{% url 'admin:catalog_review_changelist' %}?status__exact=PENDING"><b>{{ dashboard.pending_reviews }}</b><span>Reviews to moderate</span></a>
+</div>
+<div class="module cl-recent">
+  <h2>Recent orders</h2>
+  <table>
+    <thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
+    <tbody>
+    {% for o in dashboard.recent_orders %}<tr><td><a href="{% url 'admin:sales_order_change' o.id %}">#{{ o.id }}</a></td><td>{{ o.customer }}</td><td>{{ o.status }}</td><td>€{{ o.total }}</td><td>{{ o.created_at|date:"j M H:i" }}</td></tr>
+    {% empty %}<tr><td colspan="5">No orders yet — place one in the storefront or run <code>simulate_business</code>.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

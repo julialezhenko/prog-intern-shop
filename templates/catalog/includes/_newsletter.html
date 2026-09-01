@@ -1,0 +1,13 @@
+<section class="newsletter-band" aria-labelledby="newsletter-title">
+  <div>
+    <p class="eyebrow light">Newsletter</p>
+    <h2 id="newsletter-title">Fresh crops, roast days and 10% off your next bag</h2>
+    <p>Two e-mails a month: what just landed, what we are cupping, and one brew tip that actually helps.</p>
+  </div>
+  <form method="post" action="{% url 'newsletter_subscribe' %}" class="newsletter-form">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="source" value="{{ source|default:'home' }}">
+    <label for="nl-email" class="sr-only">Email address</label>
+    <input id="nl-email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+    <button type="submit" class="button light">Subscribe</button>
+  </form>
+</section>

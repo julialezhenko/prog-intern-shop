@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}Your account — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Account</p><h1>Hello, {{ user.first_name|default:user.username }}</h1></div><form method="post" action="{% url 'logout' %}" class="inline-form">{% csrf_token %}<button type="submit" class="button ghost small">Log out</button></form></div>
+<div class="cart-layout">
+  <form method="post" class="card form-card" novalidate>{% csrf_token %}
+    <h2>Profile</h2>
+    <div class="form-grid">
+      {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for e in field.errors %}<small class="error-text">{{ e }}</small>{% endfor %}</div>{% endfor %}
+    </div>
+    <div class="row"><button type="submit" class="button">Save changes</button><a class="button ghost" href="{% url 'password_change' %}">Change password</a>{% if user.is_staff %}<a class="button ghost" href="{% url 'admin:index' %}">Admin</a>{% endif %}</div>
+  </form>
+  <aside class="card summary">
+    <h2>Recent orders</h2>
+    {% if orders %}
+      <ul class="plain order-mini">{% for o in orders %}<li><a href="{% url 'order_detail' o.id %}">#{{ o.id }}</a><span class="muted">{{ o.created_at|date:"j M" }}</span><span>{{ CURRENCY }}{{ o.total|money }}</span><span class="status status-{{ o.status|lower }}">{{ o.get_status_display }}</span></li>{% endfor %}</ul>
+      <a href="{% url 'order_list' %}">All orders →</a>
+    {% else %}<p class="muted">No orders yet.</p><a class="button small" href="{% url 'product_list' %}">Shop the coffee</a>{% endif %}
+  </aside>
+</div>
+{% endblock %}

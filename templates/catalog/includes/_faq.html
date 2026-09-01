@@ -1,0 +1,8 @@
+<div class="faq" {% if faq_id %}id="{{ faq_id }}"{% endif %}>
+  {% for question, answer in faq %}
+  <details class="faq-item" {% if forloop.first and open_first %}open{% endif %}>
+    <summary>{{ question }}<span class="faq-icon" aria-hidden="true"></span></summary>
+    <p>{{ answer }}</p>
+  </details>
+  {% endfor %}
+</div>

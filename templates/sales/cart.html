@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}Your cart — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Your cart</h1>{% if totals.items %}<p class="lead">{{ cart.item_count }} item{{ cart.item_count|pluralize }} · free EU shipping included</p>{% endif %}</div></div>
+{% if not user.is_authenticated and totals.items %}<p class="muted small">Shopping as a guest. <a href="{% url 'login' %}?next={% url 'cart_detail' %}">Log in</a> to keep this cart on your account — items will be merged.</p>{% endif %}
+{% if totals.items %}
+<div class="cart-layout">
+  <section class="cart-lines" aria-label="Cart items">
+    {% for item in totals.items %}
+      <article class="cart-line">
+        <a href="{{ item.variant.product.get_absolute_url }}" class="line-media">{% with image=item.variant.product.primary_image %}{% if image %}<img src="{{ image.src|img:'w=240&h=240' }}" alt="" width="120" height="120">{% endif %}{% endwith %}</a>
+        <div class="line-body">
+          <h2><a href="{{ item.variant.product.get_absolute_url }}">{{ item.variant.product.name }}</a></h2>
+          <small class="muted">{{ item.variant.name }} · {{ item.variant.sku }}</small>
+          <div class="line-controls">
+            <form method="post" action="{% url 'cart_update' %}" class="qty-form" data-qty-form>{% csrf_token %}
+              <input type="hidden" name="item" value="{{ item.id }}">
+              <div class="qty" data-qty><button type="button" aria-label="Decrease quantity" data-qty-minus>−</button><input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="99" aria-label="Quantity for {{ item.variant.product.name }}"><button type="button" aria-label="Increase quantity" data-qty-plus>+</button></div>
+              <button type="submit" class="link-button update-btn">Update</button>
+            </form>
+            <form method="post" action="{% url 'cart_remove' item.id %}" class="inline-form">{% csrf_token %}<button type="submit" class="link-button danger" aria-label="Remove {{ item.variant.product.name }}">Remove</button></form>
+          </div>
+        </div>
+        <div class="line-price"><strong>{{ CURRENCY }}{{ item.line_total|money }}</strong>{% if item.quantity > 1 %}<small class="muted">{{ CURRENCY }}{{ item.variant.effective_price|money }} each</small>{% endif %}</div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <aside class="summary card" aria-label="Order summary">
+    <h2>Summary</h2>
+    <form method="post" action="{% url 'cart_apply_discount' %}" class="discount-form">{% csrf_token %}<label for="{{ discount_form.code.id_for_label }}" class="sr-only">Discount code</label>{{ discount_form.code }}<button type="submit" class="button small ghost">Apply</button></form>
+    {% if cart.discount %}<p class="muted small">Code <strong>{{ cart.discount.code }}</strong> applied.</p>{% endif %}
+    <dl class="totals">
+      <dt>Subtotal</dt><dd>{{ CURRENCY }}{{ totals.subtotal|money }}</dd>
+      {% if totals.discount %}<dt>Discount</dt><dd class="ok">− {{ CURRENCY }}{{ totals.discount|money }}</dd>{% endif %}
+      <dt>Shipping</dt><dd>Free</dd>
+      <dt class="muted small">Includes VAT</dt><dd class="muted small">{{ CURRENCY }}{{ totals.tax|money }}</dd>
+      <dt class="grand">Total</dt><dd class="grand">{{ CURRENCY }}{{ totals.total|money }}</dd>
+    </dl>
+    <a class="button block large" href="{% url 'checkout' %}">Proceed to checkout</a>
+    <a class="button ghost block" href="{% url 'product_list' %}">Continue shopping</a>
+    <ul class="summary-trust"><li>Roasted to order, shipped within 48 h</li><li>30-day happiness guarantee</li><li>Demo checkout — no real payment</li></ul>
+  </aside>
+</div>
+{% else %}
+<div class="empty-state"><h3>Your cart is empty</h3><p>The kettle is on — find a coffee you will love.</p><a class="button" href="{% url 'product_list' %}">Browse the coffee</a></div>
+{% endif %}
+{% endblock %}

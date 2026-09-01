@@ -1,0 +1,63 @@
+services:
+  app:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MEDIA_ROOT: /app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes: [".:/app", "media:/app/media"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+  worker:
+    build: .
+    command: celery -A config worker --loglevel=info
+    env_file: .env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MEDIA_ROOT: /app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes: [".:/app", "media:/app/media"]
+  beat:
+    build: .
+    command: celery -A config beat --loglevel=info
+    env_file: .env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_started
+    volumes: [".:/app"]
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: commercelab
+      POSTGRES_USER: commercelab
+      POSTGRES_PASSWORD: commercelab
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U commercelab -d commercelab"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+  redis:
+    image: redis:7-alpine
+volumes:
+  pgdata:
+  media:

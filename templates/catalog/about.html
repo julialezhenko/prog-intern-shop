@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}Our story — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div><p class="eyebrow">Our story</p><h1>A small roastery in Valencia with a stubborn idea about freshness.</h1><p class="lead">{{ STORE_SHORT_NAME }} started in {{ facts.founded }} with a 5 kg roaster, a borrowed van and the belief that coffee should be sold with a roast date, not a best-before date.</p></div>
+  <img src="{{ 'https://images.unsplash.com/photo-1741994043738-393513f7bf52'|img:'w=1200&h=900' }}" alt="A drum roaster in the roastery" width="1200" height="900">
+</section>
+<section class="stats-row">
+  <div><strong>{{ facts.founded }}</strong><span>Founded</span></div><div><strong>{{ facts.origins }}</strong><span>Origins</span></div><div><strong>3</strong><span>Roast days a week</span></div><div><strong>48 h</strong><span>Roast to dispatch</span></div>
+</section>
+<section class="prose two-col" id="sourcing">
+  <div><h2>How we source</h2><p>We buy from named farms, washing stations and cooperatives, and we go back to the same people year after year. Every lot is cupped blind before we commit, and we publish the producer on the bag and on this site. Where we can, we pay a fixed premium above the market so that producers can plan — and so that the coffee keeps getting better.</p></div>
+  <div><h2>How we roast</h2><p>Light enough to taste the origin, developed enough to be sweet. Filter coffees are roasted for clarity; espresso is given a little more time for body. We roast on {{ facts.roast_days }}, rest espresso for ten days, and ship everything within 48 hours. The roast date is printed on every label.</p></div>
+</section>
+<section class="why-grid">{% for title, text in trust %}<div class="why-card"><span class="why-index">0{{ forloop.counter }}</span><h3>{{ title }}</h3><p>{{ text }}</p></div>{% endfor %}</section>
+<section class="editorial">
+  <div class="editorial-media"><img src="{{ 'https://images.unsplash.com/photo-1619860703338-9c70a1af6a63'|img:'w=1200&h=900' }}" alt="A barista pouring water over a dripper at the brew bar" loading="lazy" width="1200" height="900"></div>
+  <div class="editorial-copy"><p class="eyebrow">Visit us</p><h2>The brew bar on Carrer de la Reina</h2><p>Open Tuesday to Saturday, 8:00–15:00. Taste whatever we roasted that morning, borrow a grinder, or pick up an order and skip the shipping altogether.</p><a class="button" href="{% url 'product_list' %}">Shop the coffee</a></div>
+</section>
+{% endblock %}

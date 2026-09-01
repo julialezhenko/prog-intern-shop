@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load storefront_extras %}
+{% block title %}Checkout — {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Checkout</h1><p class="lead">Delivery details first; payment is on the next step.</p></div><ol class="stepper" aria-label="Checkout progress"><li class="done">Cart</li><li class="current" aria-current="step">Details</li><li>Payment</li></ol></div>
+<div class="cart-layout">
+  <form method="post" class="card form-card checkout-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="message error">{{ form.non_field_errors }}</div>{% endif %}
+    {% if is_guest %}<p class="message">Guest checkout — we will e-mail you a private link to track and pay for the order. <a href="{% url 'login' %}?next={% url 'checkout' %}">Log in</a> if you already have an account.</p>{% endif %}
+    <h2>Contact</h2>
+    <div class="form-grid">
+      {% for field in form %}{% if field.name == 'shipping_name' or field.name == 'contact_email' or field.name == 'contact_phone' %}
+        <div class="field {% if field.name == 'shipping_name' %}span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}{% for e in field.errors %}<small class="error-text">{{ e }}</small>{% endfor %}</div>
+      {% endif %}{% endfor %}
+    </div>
+    <h2>Delivery address</h2>
+    <div class="form-grid">
+      {% for field in form %}{% if field.name == 'shipping_address' or field.name == 'shipping_city' or field.name == 'shipping_postal_code' or field.name == 'shipping_country' %}
+        <div class="field {% if field.name == 'shipping_address' %}span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% for e in field.errors %}<small class="error-text">{{ e }}</small>{% endfor %}</div>
+      {% endif %}{% endfor %}
+    </div>
+    <h2>Anything we should know?</h2>
+    <div class="field"><label for="{{ form.customer_note.id_for_label }}">{{ form.customer_note.label }} <span class="muted">(optional — gift note, door code…)</span></label>{{ form.customer_note }}</div>
+    <p class="muted small">This is a demo store: on the next step you will pay with a simulated card and no money will move.</p>
+    <button type="submit" class="button large">Continue to payment</button>
+  </form>
+
+  <aside class="summary card" aria-label="Order summary">
+    <h2>Your order</h2>
+    <ul class="summary-list">{% for item in totals.items %}<li>{% with image=item.variant.product.primary_image %}{% if image %}<img src="{{ image.src|img:'w=120&h=120' }}" alt="" width="56" height="56">{% endif %}{% endwith %}<span><strong>{{ item.variant.product.name }}</strong><small class="muted">{{ item.variant.name }} × {{ item.quantity }}</small></span><span>{{ CURRENCY }}{{ item.line_total|money }}</span></li>{% endfor %}</ul>
+    <dl class="totals">
+      <dt>Subtotal</dt><dd>{{ CURRENCY }}{{ totals.subtotal|money }}</dd>
+      {% if totals.discount %}<dt>Discount</dt><dd class="ok">− {{ CURRENCY }}{{ totals.discount|money }}</dd>{% endif %}
+      <dt>Shipping</dt><dd>Free</dd>
+      <dt class="muted small">Includes VAT</dt><dd class="muted small">{{ CURRENCY }}{{ totals.tax|money }}</dd>
+      <dt class="grand">Total</dt><dd class="grand">{{ CURRENCY }}{{ totals.total|money }}</dd>
+    </dl>
+    <a class="muted small" href="{% url 'cart_detail' %}">← Edit cart</a>
+  </aside>
+</div>
+{% endblock %}
